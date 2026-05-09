@@ -4,13 +4,25 @@ const path = require('path');
 let mainWindow;
 
 function createWindow() {
+  const isDev = !app.isPackaged;
+  
+  const htmlPath = isDev 
+    ? path.join(__dirname, '../dist/index.html')
+    : path.join(__dirname, '../dist/index.html');
+
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    width: 1000,
+    height: 700,
+    minWidth: 600,
+    minHeight: 400,
     frame: false,
-    backgroundColor: '#050505',
+    backgroundColor: '#0A0A0A',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#0A0A0A',
+      symbolColor: '#666',
+      height: 40
+    },
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -19,56 +31,29 @@ function createWindow() {
     show: false,
   });
 
-  const isDev = !app.isPackaged;
-
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
-  }
+  mainWindow.loadFile(htmlPath);
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-  });
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
   });
 }
 
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-ipcMain.on('minimize', () => {
-  if (mainWindow) mainWindow.minimize();
-});
-
+ipcMain.on('minimize', () => mainWindow?.minimize());
 ipcMain.on('maximize', () => {
-  if (mainWindow) {
-    if (mainWindow.isMaximized()) {
-      mainWindow.unmaximize();
-    } else {
-      mainWindow.maximize();
-    }
+  if (mainWindow?.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow?.maximize();
   }
 });
-
-ipcMain.on('close', () => {
-  if (mainWindow) mainWindow.close();
-});
-
-ipcMain.handle('is-maximized', () => {
-  return mainWindow ? mainWindow.isMaximized() : false;
-});
+ipcMain.on('close', () => mainWindow?.close());

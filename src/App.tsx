@@ -103,9 +103,7 @@ function App() {
             exit={{ x: -60, opacity: 0 }}
             className="w-16 flex-shrink-0 border-r border-[#1A1A1A] py-4 flex flex-col items-center gap-3 relative z-20"
           >
-            <button onClick={() => setShowSidebar(false)} className="w-10 h-10 rounded-xl bg-[#111] border border-[#222] flex items-center justify-center hover:border-[#444] transition-colors">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8L10 12" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            </button>
+            <img src="./logo.png" alt="Notes app" className="w-10 h-10 object-contain rounded-xl" />
             <div className="flex-1 flex flex-col gap-2 overflow-y-auto py-2">
               {notes.map((_, i) => (
                 <button
@@ -140,11 +138,12 @@ function App() {
             transition={{ duration: 0.4 }}
             className="w-full max-w-2xl"
           >
+            
             <textarea
               ref={textareaRef}
               value={activeNote.content}
               onChange={(e) => updateNote(e.target.value)}
-              placeholder="Just type..."
+              placeholder="Take your notes.."
               className="w-full h-[60vh] bg-transparent text-[#888] text-lg leading-relaxed placeholder-[#333] outline-none resize-none"
               spellCheck={false}
             />
