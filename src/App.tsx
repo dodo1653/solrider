@@ -1,5 +1,7 @@
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Landing from './components/Landing';
 
 interface Note {
   id: string;
@@ -7,7 +9,7 @@ interface Note {
   createdAt: number;
 }
 
-function App() {
+function NotesApp() {
   const [notes, setNotes] = useState<Note[]>(() => {
     const saved = localStorage.getItem('notes');
     return saved ? JSON.parse(saved) : [{ id: '1', content: 'Welcome. This is your infinite canvas.\n\nJust type. Your thoughts flow here.\n\n• Each note is a stream\n• No titles, no folders\n• Just you and your words\n• Navigate with arrow keys\n• New note with + button below', createdAt: Date.now() }];
@@ -103,7 +105,9 @@ function App() {
             exit={{ x: -60, opacity: 0 }}
             className="w-16 flex-shrink-0 border-r border-[#1A1A1A] py-4 flex flex-col items-center gap-3 relative z-20"
           >
-            <img src="./logo.png" alt="Notes app" className="w-10 h-10 object-contain rounded-xl" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden border border-[#222]">
+              <img src="./logo.png" alt="Notes app" className="w-full h-full object-cover object-center scale-125" />
+            </div>
             <div className="flex-1 flex flex-col gap-2 overflow-y-auto py-2">
               {notes.map((_, i) => (
                 <button
@@ -200,6 +204,15 @@ function App() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/app" element={<NotesApp />} />
+    </Routes>
   );
 }
 
