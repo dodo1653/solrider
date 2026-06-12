@@ -4,12 +4,7 @@ import ReactLenis from 'lenis/react';
 import { usePumpFun, type PumpCoin } from '../hooks/usePumpFun';
 import GameView from './GameView';
 
-const LEGENDARY_CRASHES: (PumpCoin & { change: number })[] = [
-  { mint: 'LUNA', name: 'Terra LUNA', symbol: 'LUNA', priceChange24h: -99.9, change: -99.9 },
-  { mint: 'FTT', name: 'FTX Token', symbol: 'FTT', priceChange24h: -97.5, change: -97.5 },
-  { mint: 'USTC', name: 'Terra UST', symbol: 'USTC', priceChange24h: -99.2, change: -99.2 },
-  { mint: 'VCX', name: 'Voyager Token', symbol: 'VCX', priceChange24h: -98.1, change: -98.1 },
-];
+
 
 function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -131,25 +126,34 @@ export default function Home() {
 
   useEffect(() => {
     const q = searchQuery.trim();
-    if (q.length < 30 || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(q)) {
+    if (q.length < 30) {
       setSearchPreview(null);
       return;
     }
     setPreviewLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`https://frontend-api-v3.pump.fun/coins/${q}`, {
-          headers: { Accept: 'application/json' }
-        });
-        if (!res.ok) { setSearchPreview(null); return; }
-        const data = await res.json();
-        if (data) {
-          setSearchPreview({
-            name: data.name || data.symbol || q.slice(0, 8),
-            symbol: data.symbol || q.slice(0, 5),
-            imageUrl: data.image_uri || undefined,
-          });
+        const [metaRes, dexRes] = await Promise.all([
+          fetch(`https://frontend-api-v3.pump.fun/coins/${q}`, {
+            headers: { Accept: 'application/json' }
+          }),
+          fetch(`https://api.dexscreener.com/latest/dex/tokens/${q}`, {
+            headers: { Accept: 'application/json' }
+          })
+        ]);
+        let name = q.slice(0, 8), symbol = q.slice(0, 5), imageUrl: string | undefined;
+        if (metaRes.ok) {
+          const data = await metaRes.json();
+          name = data.name || data.symbol || name;
+          symbol = data.symbol || symbol;
+          imageUrl = data.image_uri || data.uri || imageUrl;
         }
+        if (!imageUrl && dexRes.ok) {
+          const dexData = await dexRes.json();
+          const pair = dexData.pairs?.[0];
+          imageUrl = pair?.info?.imageUrl || imageUrl;
+        }
+        setSearchPreview({ name, symbol, imageUrl });
       } catch { setSearchPreview(null); }
       setPreviewLoading(false);
     }, 400);
@@ -367,44 +371,6 @@ export default function Home() {
               )}
             </section>
 
-            <section className="pb-20">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="mb-6"
-              >
-                <h2 className="text-sm font-mono text-white/50 tracking-widest uppercase">Legendary On-Chain Crashes</h2>
-                <p className="text-xs font-mono text-white/20 mt-1">Historical Solana memecoin catastrophes</p>
-              </motion.div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {LEGENDARY_CRASHES.map((coin, i) => (
-                  <motion.button
-                    key={coin.name}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    whileHover={{ scale: 1.03, y: -4 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => handlePlay(coin)}
-                    className="group relative p-5 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-left overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#ff0040]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="relative z-10">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff0040]/20 to-[#ff0040]/5 flex items-center justify-center text-sm font-bold font-mono border border-[#ff0040]/30 text-[#ff0040]">
-                          {coin.name.slice(0, 2)}
-                        </div>
-                        <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-[#ff0040]/15 text-[#ff0040] font-semibold tracking-wider">INSANE</span>
-                      </div>
-                      <div className="font-mono font-bold text-base text-white">{coin.name}</div>
-                      <div className="font-mono text-xs text-white/40 mb-2">{coin.label}</div>
-                      <div className="text-sm font-mono font-bold text-[#ff0040]">{coin.change.toFixed(1)}%</div>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
-            </section>
           </main>
 
           <footer className="border-t border-white/[0.04] py-8">
