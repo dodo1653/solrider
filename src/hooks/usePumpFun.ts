@@ -126,14 +126,18 @@ async function fetchBatchFromDex(mints: string[]): Promise<Map<string, PumpCoin>
   return map;
 }
 
-async function fetchTokenMeta(mint: string): Promise<{ name: string; symbol: string } | null> {
+async function fetchTokenMeta(mint: string): Promise<{ name: string; symbol: string; imageUrl?: string } | null> {
   try {
     const res = await fetch(`https://frontend-api-v3.pump.fun/coins/${mint}`, {
       headers: { Accept: 'application/json' }
     });
     if (!res.ok) return null;
     const c = await res.json();
-    return { name: c.name || c.symbol || mint, symbol: c.symbol || mint };
+    return {
+      name: c.name || c.symbol || mint,
+      symbol: c.symbol || mint,
+      imageUrl: c.image_uri || c.uri || undefined,
+    };
   } catch { return null; }
 }
 
@@ -198,6 +202,7 @@ export function usePumpFun() {
           mint: KNOWN_TOP_MINTS[i],
           name: meta?.name || meta?.symbol || KNOWN_TOP_MINTS[i].slice(0, 8),
           symbol: meta?.symbol || KNOWN_TOP_MINTS[i].slice(0, 5),
+          imageUrl: meta?.image_uri || meta?.uri || undefined,
         });
       }
 
@@ -205,7 +210,12 @@ export function usePumpFun() {
 
       const enriched = baseCoins.map(coin => {
         const fromDex = dexMap.get(coin.mint);
-        return fromDex ? { ...coin, ...fromDex } : coin;
+        if (!fromDex) return coin;
+        return {
+          ...coin,
+          ...fromDex,
+          imageUrl: coin.imageUrl || fromDex.imageUrl,
+        };
       });
 
       setTopCoins(enriched.filter(c => c.marketCapUsd !== undefined).length > 0
@@ -226,6 +236,7 @@ export function usePumpFun() {
         mint,
         name: meta?.name || mint.slice(0, 8),
         symbol: meta?.symbol || mint.slice(0, 5),
+        imageUrl: meta?.imageUrl,
       };
 
       const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${mint}`, {
@@ -236,7 +247,14 @@ export function usePumpFun() {
         const pair = data.pairs?.[0];
         if (pair) {
           const dexData = parseDexScreenerPair(pair);
-          if (dexData) Object.assign(coin, dexData);
+          if (dexData) {
+            if (!coin.imageUrl) coin.imageUrl = dexData.imageUrl;
+            coin.priceUsd = dexData.priceUsd || coin.priceUsd;
+            coin.priceChange24h = dexData.priceChange24h || coin.priceChange24h;
+            coin.volume24h = dexData.volume24h || coin.volume24h;
+            coin.liquidityUsd = dexData.liquidityUsd || coin.liquidityUsd;
+            coin.marketCapUsd = dexData.marketCapUsd || coin.marketCapUsd;
+          }
         }
       }
       return coin;
