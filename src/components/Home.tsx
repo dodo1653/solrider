@@ -123,9 +123,38 @@ export default function Home() {
   const [view, setView] = useState<'home' | 'game'>('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
+  const [searchPreview, setSearchPreview] = useState<{ name: string; symbol: string; imageUrl?: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const { topCoins, loading, fetchTopCoins, fetchCoinByMint, prepareGame, clearGame, selectedCoin, candles } = usePumpFun();
 
   useEffect(() => { fetchTopCoins(); }, []);
+
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 30 || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(q)) {
+      setSearchPreview(null);
+      return;
+    }
+    setPreviewLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://frontend-api-v3.pump.fun/coins/${q}`, {
+          headers: { Accept: 'application/json' }
+        });
+        if (!res.ok) { setSearchPreview(null); return; }
+        const data = await res.json();
+        if (data) {
+          setSearchPreview({
+            name: data.name || data.symbol || q.slice(0, 8),
+            symbol: data.symbol || q.slice(0, 5),
+            imageUrl: data.image_uri || undefined,
+          });
+        }
+      } catch { setSearchPreview(null); }
+      setPreviewLoading(false);
+    }, 400);
+    return () => { clearTimeout(timer); setPreviewLoading(false); };
+  }, [searchQuery]);
 
   const handlePlay = async (coin: PumpCoin & { change?: number }) => {
     if (coin.change) {
@@ -250,6 +279,32 @@ export default function Home() {
                   </motion.button>
                 </div>
 
+                {searchPreview && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] mx-auto mb-4 w-fit"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-white/[0.08] to-white/[0.02] flex items-center justify-center text-xs font-bold font-mono border border-white/[0.08] overflow-hidden">
+                      {searchPreview.imageUrl ? (
+                        <img src={searchPreview.imageUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-white/40">{searchPreview.symbol.slice(0, 2)}</span>
+                      )}
+                    </div>
+                    <div className="text-left">
+                      <div className="font-mono text-xs font-bold text-white/80">{searchPreview.symbol}</div>
+                      <div className="font-mono text-[10px] text-white/40">{searchPreview.name}</div>
+                    </div>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00f5d4] animate-pulse ml-1" />
+                  </motion.div>
+                )}
+                {previewLoading && searchQuery.trim().length >= 30 && !searchPreview && (
+                  <div className="flex items-center justify-center gap-2 mb-4">
+                    <div className="w-4 h-4 border-2 border-[#00f5d4]/30 border-t-[#00f5d4] rounded-full animate-spin" />
+                    <span className="text-[10px] font-mono text-white/30">looking up token...</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-white/25">
                   <span className="w-1 h-1 rounded-full bg-[#00f5d4]" />
                   Powered by real on-chain data from Solana

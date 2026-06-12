@@ -8,6 +8,10 @@ export interface BikeState {
   grounded: boolean;
   totalRotation: number;
   flips: number;
+  suspensionFront: number;
+  suspensionRear: number;
+  wheelRot: number;
+  sparkTimer: number;
 }
 
 export function createBike(startX: number, startY: number): BikeState {
@@ -21,5 +25,9 @@ export function createBike(startX: number, startY: number): BikeState {
     grounded: true,
     totalRotation: 0,
     flips: 0,
+    suspensionFront: 0,
+    suspensionRear: 0,
+    wheelRot: 0,
+    sparkTimer: 0,
   };
 }

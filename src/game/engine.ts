@@ -1,23 +1,12 @@
 import { InputManager } from './input';
 import { TerrainPoint, getTerrainHeight, getTerrainAngle } from './terrain';
+import type { BikeState } from './bike';
 import {
   GRAVITY, BIKE_SPEED, MAX_SPEED, JUMP_FORCE,
   ROTATION_SPEED, FRICTION, CRASH_ANGLE, CANVAS_HEIGHT,
 } from './constants';
 
 export type GameStatus = 'idle' | 'playing' | 'crashed' | 'finished';
-
-export interface BikeState {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  rotation: number;
-  angularVel: number;
-  grounded: boolean;
-  totalRotation: number;
-  flips: number;
-}
 
 export interface GameState {
   bike: BikeState;
@@ -43,6 +32,10 @@ export function createGameState(terrain: TerrainPoint[]): GameState {
       grounded: true,
       totalRotation: 0,
       flips: 0,
+      suspensionFront: 0,
+      suspensionRear: 0,
+      wheelRot: 0,
+      sparkTimer: 0,
     },
     terrain,
     score: 0,
@@ -103,6 +96,8 @@ export function updateGame(
     bike.totalRotation = bike.totalRotation % (Math.PI * 2);
   }
 
+  bike.wheelRot += (bike.vx * dt) / 5;
+
   const surfaceY = getTerrainHeight(state.terrain, bike.x);
   const wasGrounded = bike.grounded;
 
@@ -119,9 +114,15 @@ export function updateGame(
     }
 
     if (!bike.grounded && bike.y >= surfaceY - 2 && bike.vy >= 0) {
+      const impact = Math.abs(bike.vy);
       bike.y = surfaceY - 5;
       bike.vy = 0;
       bike.grounded = true;
+      bike.suspensionFront += Math.min(impact * 2, 5);
+      bike.suspensionRear += Math.min(impact * 1.5, 4);
+      if (impact > 1.5) {
+        bike.sparkTimer = Math.min(Math.floor(impact * 5), 20);
+      }
       if (Math.abs(bike.rotation) > 0.4) {
         newState.status = 'crashed';
       }
@@ -149,6 +150,24 @@ export function updateGame(
   }
 
   if (bike.x < 0) bike.x = 0;
+
+  if (bike.sparkTimer > 0) bike.sparkTimer -= dt;
+
+  if (bike.grounded) {
+    bike.suspensionFront += (0 - bike.suspensionFront) * 0.2 * dt;
+    bike.suspensionRear += (0 - bike.suspensionRear) * 0.2 * dt;
+    bike.suspensionFront *= 0.85;
+    bike.suspensionRear *= 0.85;
+    if (input.throttle && bike.vx > 1) {
+      bike.suspensionRear = Math.min(bike.suspensionRear + 0.5 * dt, 3);
+    }
+    if (input.brake && bike.vx > 1) {
+      bike.suspensionFront = Math.min(bike.suspensionFront + 0.5 * dt, 3);
+    }
+  } else {
+    bike.suspensionFront *= 0.95;
+    bike.suspensionRear *= 0.95;
+  }
 
   newState.distance = Math.max(0, bike.x - state.terrain[0]?.x);
   newState.score = Math.floor(newState.distance / 5) + Math.abs(bike.flips) * 500;

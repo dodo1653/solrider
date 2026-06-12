@@ -1,13 +1,19 @@
 import { GameState } from './engine';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, COLORS } from './constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from './constants';
 import { TerrainPoint } from './terrain';
 
 interface Star {
   x: number; y: number; size: number; speed: number; brightness: number;
 }
 
+interface Particle {
+  x: number; y: number; vx: number; vy: number;
+  life: number; maxLife: number; size: number; color: string;
+}
+
 let stars: Star[] = [];
 let starsGenerated = false;
+let particles: Particle[] = [];
 
 function generateStars(): Star[] {
   const s: Star[] = [];
@@ -133,6 +139,68 @@ function drawTerrain(ctx: CanvasRenderingContext2D, points: TerrainPoint[], came
   }
 }
 
+function drawWheel(ctx: CanvasRenderingContext2D, cx: number, cy: number, wheelRot: number, color: string) {
+  const R = 5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.fillStyle = '#111';
+  ctx.fill();
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(200,200,200,0.3)';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + wheelRot;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * 1.5, cy + Math.sin(a) * 1.5);
+    ctx.lineTo(cx + Math.cos(a) * (R - 1), cy + Math.sin(a) * (R - 1));
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#ff6b6b';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+}
+
+function drawSuspensionFork(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, compression: number) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 1) return;
+  const nx = dx / len;
+  const ny = dy / len;
+
+  const compressedLen = len - compression * 2;
+  const forkEndX = x1 + nx * compressedLen;
+  const forkEndY = y1 + ny * compressedLen;
+
+  ctx.strokeStyle = '#c0c0c0';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x1 - 1.5, y1); ctx.lineTo(forkEndX - 1.5, forkEndY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x1 + 1.5, y1); ctx.lineTo(forkEndX + 1.5, forkEndY); ctx.stroke();
+
+  if (compression > 0.3) {
+    ctx.strokeStyle = 'rgba(255,200,50,0.3)';
+    ctx.lineWidth = 1;
+    const springY = (y1 + forkEndY) / 2;
+    for (let i = 0; i < 3; i++) {
+      const sy = springY + (i - 1) * 2;
+      ctx.beginPath();
+      ctx.moveTo(x1 - 2, sy);
+      ctx.quadraticCurveTo(x1 - 3, sy + 1, x1 - 2, sy + 2);
+      ctx.moveTo(x1 + 2, sy);
+      ctx.quadraticCurveTo(x1 + 3, sy + 1, x1 + 2, sy + 2);
+      ctx.stroke();
+    }
+  }
+}
+
 function drawBike(ctx: CanvasRenderingContext2D, state: GameState, cameraX: number) {
   const { bike } = state;
   const sx = bike.x - cameraX;
@@ -145,54 +213,18 @@ function drawBike(ctx: CanvasRenderingContext2D, state: GameState, cameraX: numb
   ctx.shadowColor = bike.grounded ? '#ff6b6b' : '#ffd93d';
   ctx.shadowBlur = 20;
 
-  const RAX = -11, FAX = 15, AY = 5, R_WHEEL = 5;
-  const PX = 0, PY = -1;
+  const sf = Math.min(bike.suspensionFront, 4);
+  const sr = Math.min(bike.suspensionRear, 3);
+  const RAX = -11, FAX = 15, AY = 5 + sf * 0.5;
+  const RAY = 5 + sr * 0.3;
+  const PX = 0, PY = -1 + sf * 0.2;
   const SX = 2, SY = -13;
   const HX = 14, HY = -11;
 
   ctx.shadowBlur = 0;
 
-  ctx.strokeStyle = '#888';
-  ctx.lineWidth = 0.6;
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(RAX, AY);
-    ctx.lineTo(RAX + Math.cos(a) * (R_WHEEL - 1), AY + Math.sin(a) * (R_WHEEL - 1));
-    ctx.stroke();
-  }
-  ctx.beginPath();
-  ctx.arc(RAX, AY, R_WHEEL, 0, Math.PI * 2);
-  ctx.fillStyle = '#111';
-  ctx.fill();
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(RAX, AY, 2, 0, Math.PI * 2);
-  ctx.fillStyle = '#ffd93d';
-  ctx.fill();
-
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
-    ctx.beginPath();
-    ctx.moveTo(FAX, AY);
-    ctx.lineTo(FAX + Math.cos(a) * (R_WHEEL - 1), AY + Math.sin(a) * (R_WHEEL - 1));
-    ctx.strokeStyle = '#888';
-    ctx.lineWidth = 0.6;
-    ctx.stroke();
-  }
-  ctx.beginPath();
-  ctx.arc(FAX, AY, R_WHEEL, 0, Math.PI * 2);
-  ctx.fillStyle = '#111';
-  ctx.fill();
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(FAX, AY, 2, 0, Math.PI * 2);
-  ctx.fillStyle = '#ffd93d';
-  ctx.fill();
+  drawWheel(ctx, RAX, RAY, bike.wheelRot, '#ffd93d');
+  drawWheel(ctx, FAX, AY, bike.wheelRot + 0.3, '#ffd93d');
 
   ctx.lineWidth = 2.5;
   ctx.lineCap = 'round';
@@ -202,13 +234,20 @@ function drawBike(ctx: CanvasRenderingContext2D, state: GameState, cameraX: numb
   ctx.beginPath(); ctx.moveTo(SX, SY); ctx.lineTo(HX, HY); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(HX, HY); ctx.lineTo(PX, PY); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(PX, PY); ctx.lineTo(SX, SY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(RAX, AY); ctx.lineTo(PX, PY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(RAX, AY); ctx.lineTo(SX, SY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(RAX, RAY); ctx.lineTo(PX, PY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(RAX, RAY); ctx.lineTo(SX, SY); ctx.stroke();
 
-  ctx.strokeStyle = '#c0c0c0';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(HX - 1.5, HY); ctx.lineTo(FAX - 2, AY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(HX + 1.5, HY); ctx.lineTo(FAX + 2, AY); ctx.stroke();
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 0.8;
+  const crossDX = HX - PX, crossDY = HY - PY;
+  ctx.beginPath(); ctx.moveTo(PX + crossDX * 0.3 - crossDY * 0.05, PY + crossDY * 0.3 + crossDX * 0.05);
+  ctx.lineTo(PX + crossDX * 0.7 + crossDY * 0.05, PY + crossDY * 0.7 - crossDX * 0.05);
+  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PX + crossDX * 0.3 + crossDY * 0.05, PY + crossDY * 0.3 - crossDX * 0.05);
+  ctx.lineTo(PX + crossDX * 0.7 - crossDY * 0.05, PY + crossDY * 0.7 + crossDX * 0.05);
+  ctx.stroke();
+
+  drawSuspensionFork(ctx, HX, HY, FAX, AY, sf);
 
   ctx.strokeStyle = '#aaa';
   ctx.lineWidth = 2.5;
@@ -233,7 +272,7 @@ function drawBike(ctx: CanvasRenderingContext2D, state: GameState, cameraX: numb
   ctx.strokeStyle = '#ff6b6b';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(RAX, AY - 2, R_WHEEL + 2, -Math.PI * 0.75, -Math.PI * 0.25);
+  ctx.arc(RAX, RAY - 2, 6, -Math.PI * 0.75, -Math.PI * 0.25);
   ctx.stroke();
 
   ctx.fillStyle = '#fff';
@@ -252,13 +291,67 @@ function drawBike(ctx: CanvasRenderingContext2D, state: GameState, cameraX: numb
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(PX + 1, PY + 2);
-  ctx.lineTo(RAX + 3, AY - 2);
-  ctx.lineTo(RAX + 5, AY);
+  ctx.lineTo(RAX + 3, RAY - 2);
+  ctx.lineTo(RAX + 5, RAY);
   ctx.stroke();
   ctx.fillStyle = '#555';
-  ctx.fillRect(RAX + 4, AY - 1, 3, 2);
+  ctx.fillRect(RAX + 4, RAY - 1, 3, 2);
 
   ctx.restore();
+
+  if (state.status === 'playing' && Math.abs(bike.vx) > 1) {
+    const exX = sx + Math.cos(bike.rotation) * (RAX + 6) - Math.sin(bike.rotation) * (RAY);
+    const exY = sy + Math.sin(bike.rotation) * (RAX + 6) + Math.cos(bike.rotation) * (RAY);
+    for (let i = 0; i < 2; i++) {
+      particles.push({
+        x: exX + (Math.random() - 0.5) * 3,
+        y: exY + (Math.random() - 0.5) * 3,
+        vx: (Math.random() - 0.5) * 0.3 - 0.3,
+        vy: (Math.random() - 0.5) * 0.3 - 0.2,
+        life: 20 + Math.random() * 15,
+        maxLife: 35,
+        size: 1 + Math.random() * 2,
+        color: Math.random() > 0.5 ? 'rgba(180,180,180,' : 'rgba(200,200,200,',
+      });
+    }
+  }
+
+  if (bike.sparkTimer > 0 && bike.grounded) {
+    for (let i = 0; i < 3; i++) {
+      const sx2 = sx + (Math.random() - 0.5) * 20 - 10;
+      const sy2 = sy + 5 + Math.random() * 5;
+      const svx = (Math.random() - 0.5) * 4;
+      const svy = -(Math.random() * 3 + 1);
+      particles.push({
+        x: sx2, y: sy2, vx: svx, vy: svy,
+        life: 8 + Math.random() * 6,
+        maxLife: 14,
+        size: 1 + Math.random() * 1.5,
+        color: Math.random() > 0.5 ? 'rgba(255,200,50,' : 'rgba(255,150,50,',
+      });
+    }
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.05;
+    p.life--;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+      continue;
+    }
+    const alpha = (p.life / p.maxLife);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * (0.3 + 0.7 * alpha), 0, Math.PI * 2);
+    ctx.fillStyle = p.color + alpha * 0.5 + ')';
+    ctx.fill();
+  }
+
+  if (particles.length > 200) {
+    particles.splice(0, particles.length - 200);
+  }
 
   if (bike.vy < -2) {
     for (let i = 0; i < 2; i++) {
