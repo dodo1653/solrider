@@ -372,20 +372,6 @@ export default function Home() {
               )}
             </section>
 
-            <section className="pb-20">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="max-w-lg mx-auto"
-              >
-                <div className="px-6 py-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-center">
-                  <div className="font-mono text-[10px] text-white/20 tracking-widest uppercase mb-2">Contract Address</div>
-                  <div className="font-mono text-xs text-white/30 select-all break-all">3x5WtJFHFsr4aiE2JzcLhEfKqhFaEKfipjk7BcgJpump</div>
-                </div>
-              </motion.div>
-            </section>
-
           </main>
 
           <footer className="border-t border-white/[0.04] py-8">
