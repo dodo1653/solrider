@@ -2,10 +2,10 @@ export const CANVAS_WIDTH = 960;
 export const CANVAS_HEIGHT = 480;
 
 export const GRAVITY = 0.5;
-export const BIKE_SPEED = 3;
-export const MAX_SPEED = 8;
-export const JUMP_FORCE = -10;
-export const ROTATION_SPEED = 0.05;
+export const BIKE_SPEED = 2.2;
+export const MAX_SPEED = 5.5;
+export const JUMP_FORCE = -9;
+export const ROTATION_SPEED = 0.03;
 export const FRICTION = 0.98;
 export const CRASH_ANGLE = Math.PI / 3;
 

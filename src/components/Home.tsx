@@ -214,12 +214,12 @@ export default function Home() {
         <div className="relative z-10">
           <nav className="flex items-center justify-between px-6 md:px-10 py-5 max-w-7xl mx-auto">
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00f5d4] via-[#7c3aed] to-[#ff6b6b] flex items-center justify-center font-bold text-sm font-mono text-white shadow-lg shadow-[#00f5d4]/20">
+              <div className="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/[0.12] flex items-center justify-center font-bold text-sm font-mono text-white/90 shadow-lg">
                 SR
               </div>
               <div className="font-mono text-lg font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-[#00f5d4] to-[#7c3aed] bg-clip-text text-transparent">Sol</span>
-                <span className="text-white">Rider</span>
+                <span className="text-white/90">Sol</span>
+                <span className="text-white/50">Rider</span>
               </div>
               <div className="hidden md:flex items-center gap-1.5 ml-3 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.06]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00f5d4] animate-pulse" />
@@ -277,7 +277,7 @@ export default function Home() {
                     whileTap={{ scale: 0.97 }}
                     onClick={handlePlayCustom}
                     disabled={searching}
-                    className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#00f5d4] to-[#7c3aed] text-black font-bold text-sm font-mono hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-[#00f5d4]/20"
+                    className="px-7 py-3.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/80 font-bold text-sm font-mono hover:bg-white/[0.1] hover:text-white transition-all disabled:opacity-30"
                   >
                     {searching ? 'LOADING...' : 'RIDE →'}
                   </motion.button>
@@ -369,6 +369,20 @@ export default function Home() {
                   ))}
                 </div>
               )}
+            </section>
+
+            <section className="pb-20">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="max-w-lg mx-auto"
+              >
+                <div className="px-6 py-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] border-dashed text-center">
+                  <div className="font-mono text-[10px] text-white/20 tracking-widest uppercase mb-2">Contract Address</div>
+                  <div className="font-mono text-xs text-white/10 select-all">coming soon</div>
+                </div>
+              </motion.div>
             </section>
 
           </main>

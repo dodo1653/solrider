@@ -139,33 +139,41 @@ function drawTerrain(ctx: CanvasRenderingContext2D, points: TerrainPoint[], came
   }
 }
 
-function drawWheel(ctx: CanvasRenderingContext2D, cx: number, cy: number, wheelRot: number, color: string) {
+function drawWheel(ctx: CanvasRenderingContext2D, cx: number, cy: number, wheelRot: number, grounded: boolean) {
   const R = 5;
   ctx.beginPath();
   ctx.arc(cx, cy, R, 0, Math.PI * 2);
-  ctx.fillStyle = '#111';
+  ctx.fillStyle = '#0a0a12';
   ctx.fill();
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(200,200,200,0.15)';
+  ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  ctx.strokeStyle = 'rgba(200,200,200,0.3)';
-  ctx.lineWidth = 0.5;
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + wheelRot;
+  ctx.strokeStyle = 'rgba(200,200,200,0.12)';
+  ctx.lineWidth = 0.4;
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + wheelRot;
     ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(a) * 1.5, cy + Math.sin(a) * 1.5);
-    ctx.lineTo(cx + Math.cos(a) * (R - 1), cy + Math.sin(a) * (R - 1));
+    ctx.moveTo(cx + Math.cos(a) * 1.8, cy + Math.sin(a) * 1.8);
+    ctx.lineTo(cx + Math.cos(a) * (R - 0.5), cy + Math.sin(a) * (R - 0.5));
     ctx.stroke();
   }
 
   ctx.beginPath();
-  ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
-  ctx.fillStyle = color;
+  ctx.arc(cx, cy, 1.8, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(220,220,220,0.5)';
   ctx.fill();
-  ctx.strokeStyle = '#ff6b6b';
-  ctx.lineWidth = 0.8;
+  ctx.strokeStyle = 'rgba(200,200,200,0.2)';
+  ctx.lineWidth = 0.5;
   ctx.stroke();
+
+  if (!grounded) {
+    ctx.strokeStyle = 'rgba(255,217,61,0.08)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R + 1, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 }
 
 function drawSuspensionFork(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, compression: number) {
@@ -176,26 +184,26 @@ function drawSuspensionFork(ctx: CanvasRenderingContext2D, x1: number, y1: numbe
   const nx = dx / len;
   const ny = dy / len;
 
-  const compressedLen = len - compression * 2;
+  const compressedLen = Math.max(len - compression * 2.5, len * 0.5);
   const forkEndX = x1 + nx * compressedLen;
   const forkEndY = y1 + ny * compressedLen;
 
-  ctx.strokeStyle = '#c0c0c0';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(x1 - 1.5, y1); ctx.lineTo(forkEndX - 1.5, forkEndY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(x1 + 1.5, y1); ctx.lineTo(forkEndX + 1.5, forkEndY); ctx.stroke();
+  ctx.strokeStyle = 'rgba(180,180,180,0.4)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(x1 - 0.8, y1); ctx.lineTo(forkEndX - 0.8, forkEndY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x1 + 0.8, y1); ctx.lineTo(forkEndX + 0.8, forkEndY); ctx.stroke();
 
-  if (compression > 0.3) {
-    ctx.strokeStyle = 'rgba(255,200,50,0.3)';
-    ctx.lineWidth = 1;
-    const springY = (y1 + forkEndY) / 2;
+  if (compression > 0.5) {
+    ctx.strokeStyle = 'rgba(255,200,50,0.15)';
+    ctx.lineWidth = 0.8;
+    const midY = (y1 + forkEndY) / 2;
     for (let i = 0; i < 3; i++) {
-      const sy = springY + (i - 1) * 2;
+      const sy = midY + (i - 1) * 1.5;
       ctx.beginPath();
-      ctx.moveTo(x1 - 2, sy);
-      ctx.quadraticCurveTo(x1 - 3, sy + 1, x1 - 2, sy + 2);
-      ctx.moveTo(x1 + 2, sy);
-      ctx.quadraticCurveTo(x1 + 3, sy + 1, x1 + 2, sy + 2);
+      ctx.moveTo(x1 - 1.2, sy);
+      ctx.quadraticCurveTo(x1 - 2, sy + 0.8, x1 - 1.2, sy + 1.5);
+      ctx.moveTo(x1 + 1.2, sy);
+      ctx.quadraticCurveTo(x1 + 2, sy + 0.8, x1 + 1.2, sy + 1.5);
       ctx.stroke();
     }
   }
@@ -210,92 +218,97 @@ function drawBike(ctx: CanvasRenderingContext2D, state: GameState, cameraX: numb
   ctx.translate(sx, sy);
   ctx.rotate(bike.rotation);
 
-  ctx.shadowColor = bike.grounded ? '#ff6b6b' : '#ffd93d';
-  ctx.shadowBlur = 20;
-
   const sf = Math.min(bike.suspensionFront, 4);
   const sr = Math.min(bike.suspensionRear, 3);
-  const RAX = -11, FAX = 15, AY = 5 + sf * 0.5;
+  const RAX = -11, FAX = 16;
+  const AY = 5 + sf * 0.5;
   const RAY = 5 + sr * 0.3;
-  const PX = 0, PY = -1 + sf * 0.2;
-  const SX = 2, SY = -13;
-  const HX = 14, HY = -11;
+  const PX = 0, PY = -1 + sf * 0.15;
+  const SX = 3, SY = -14;
+  const HX = 15, HY = -12;
 
   ctx.shadowBlur = 0;
 
-  drawWheel(ctx, RAX, RAY, bike.wheelRot, '#ffd93d');
-  drawWheel(ctx, FAX, AY, bike.wheelRot + 0.3, '#ffd93d');
+  drawWheel(ctx, RAX, RAY, bike.wheelRot, bike.grounded);
+  drawWheel(ctx, FAX, AY, bike.wheelRot + 0.3, bike.grounded);
 
-  ctx.lineWidth = 2.5;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#ff6b6b';
 
+  ctx.strokeStyle = 'rgba(220,220,220,0.25)';
+  ctx.lineWidth = 0.3;
+  for (let i = 0; i < 2; i++) {
+    const t = 0.15 + i * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(PX + (HX - PX) * t - (HY - PY) * 0.04, PY + (HY - PY) * t + (HX - PX) * 0.04);
+    ctx.lineTo(PX + (HX - PX) * t + (HY - PY) * 0.04, PY + (HY - PY) * t - (HX - PX) * 0.04);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = 'rgba(200,200,200,0.35)';
+  ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(SX, SY); ctx.lineTo(HX, HY); ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(200,200,200,0.3)';
+  ctx.lineWidth = 1.8;
   ctx.beginPath(); ctx.moveTo(HX, HY); ctx.lineTo(PX, PY); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(PX, PY); ctx.lineTo(SX, SY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(RAX, RAY); ctx.lineTo(PX, PY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(RAX, RAY); ctx.lineTo(SX, SY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(RAX, RAY - 1); ctx.lineTo(PX, PY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(RAX, RAY - 1); ctx.lineTo(SX, SY); ctx.stroke();
 
-  ctx.strokeStyle = '#555';
-  ctx.lineWidth = 0.8;
-  const crossDX = HX - PX, crossDY = HY - PY;
-  ctx.beginPath(); ctx.moveTo(PX + crossDX * 0.3 - crossDY * 0.05, PY + crossDY * 0.3 + crossDX * 0.05);
-  ctx.lineTo(PX + crossDX * 0.7 + crossDY * 0.05, PY + crossDY * 0.7 - crossDX * 0.05);
-  ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(PX + crossDX * 0.3 + crossDY * 0.05, PY + crossDY * 0.3 - crossDX * 0.05);
-  ctx.lineTo(PX + crossDX * 0.7 - crossDY * 0.05, PY + crossDY * 0.7 + crossDX * 0.05);
-  ctx.stroke();
+  ctx.strokeStyle = 'rgba(200,200,200,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PX, PY); ctx.lineTo(FAX - 2, AY - 1); ctx.stroke();
 
   drawSuspensionFork(ctx, HX, HY, FAX, AY, sf);
 
-  ctx.strokeStyle = '#aaa';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  ctx.moveTo(HX - 5, HY - 3);
-  ctx.lineTo(HX + 5, HY - 3);
-  ctx.stroke();
-  ctx.strokeStyle = '#888';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(HX, HY);
-  ctx.lineTo(HX, HY - 3);
-  ctx.stroke();
-  ctx.fillStyle = '#444';
-  ctx.fillRect(HX - 6, HY - 4.5, 2.5, 3);
-  ctx.fillRect(HX + 3.5, HY - 4.5, 2.5, 3);
-
-  ctx.fillStyle = '#2a1a10';
-  roundRect(ctx, SX - 3, SY - 1, 12, 4, 2);
-  ctx.fill();
-
-  ctx.strokeStyle = '#ff6b6b';
+  ctx.strokeStyle = 'rgba(180,180,180,0.3)';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(RAX, RAY - 2, 6, -Math.PI * 0.75, -Math.PI * 0.25);
+  ctx.moveTo(HX - 4, HY - 2.5);
+  ctx.lineTo(HX + 4, HY - 2.5);
   ctx.stroke();
+  ctx.strokeStyle = 'rgba(180,180,180,0.2)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(HX, HY);
+  ctx.lineTo(HX, HY - 2.5);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(80,80,80,0.4)';
+  ctx.fillRect(HX - 5, HY - 3.5, 2, 2.5);
+  ctx.fillRect(HX + 3, HY - 3.5, 2, 2.5);
 
-  ctx.fillStyle = '#fff';
-  roundRect(ctx, HX - 3, HY - 7, 6, 4, 1);
+  ctx.fillStyle = 'rgba(40,30,25,0.6)';
+  roundRect(ctx, SX - 2, SY - 1, 10, 3.5, 1.5);
   ctx.fill();
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-  ctx.fillStyle = '#222';
-  ctx.font = '4px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('1', HX, HY - 4);
-  ctx.textAlign = 'left';
 
-  ctx.strokeStyle = '#666';
+  ctx.strokeStyle = 'rgba(200,200,200,0.15)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(PX + 1, PY + 2);
-  ctx.lineTo(RAX + 3, RAY - 2);
-  ctx.lineTo(RAX + 5, RAY);
+  ctx.arc(RAX, RAY - 1, 7, -Math.PI * 0.75, -Math.PI * 0.25);
   ctx.stroke();
-  ctx.fillStyle = '#555';
-  ctx.fillRect(RAX + 4, RAY - 1, 3, 2);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  roundRect(ctx, HX - 2.5, HY - 6.5, 5, 3.5, 0.8);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 0.3;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.font = '3.5px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('1', HX, HY - 3.8);
+  ctx.textAlign = 'left';
+
+  ctx.strokeStyle = 'rgba(150,150,150,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PX + 1, PY + 2);
+  ctx.lineTo(RAX + 3, RAY - 1);
+  ctx.lineTo(RAX + 5, RAY + 1);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(100,100,100,0.3)';
+  ctx.fillRect(RAX + 4, RAY, 2.5, 1.5);
 
   ctx.restore();
 
