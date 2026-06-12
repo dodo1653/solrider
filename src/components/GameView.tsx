@@ -11,10 +11,11 @@ interface GameViewProps {
   candles: Candle[];
   tokenName: string;
   tokenSymbol: string;
+  tokenImageUrl?: string;
   onBack: () => void;
 }
 
-export default function GameView({ candles, tokenName, tokenSymbol, onBack }: GameViewProps) {
+export default function GameView({ candles, tokenName, tokenSymbol, tokenImageUrl, onBack }: GameViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<GameState | null>(null);
   const inputRef = useRef<InputManager | null>(null);
@@ -124,9 +125,24 @@ export default function GameView({ candles, tokenName, tokenSymbol, onBack }: Ga
           >
             ← BACK
           </motion.button>
-          <div className="px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-            <span className="text-[#00f5d4] font-mono text-sm font-bold">{tokenSymbol}</span>
-            <span className="text-[#666] font-mono text-xs ml-2">{tokenName}</span>
+          <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
+            {tokenImageUrl ? (
+              <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0">
+                <img src={tokenImageUrl} alt="" className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-[10px] font-mono text-white/30 flex-shrink-0">
+                {tokenSymbol.slice(0, 2)}
+              </div>
+            )}
+            <div className="text-left">
+              <div className="text-[#e8e8e8] font-mono text-sm font-bold leading-tight">{tokenSymbol}</div>
+              <div className="text-[#666] font-mono text-[10px] leading-tight">{tokenName}</div>
+            </div>
+            <div className="flex items-center gap-1.5 ml-2 px-2 py-1 rounded-full bg-white/[0.04] border border-white/[0.06]">
+              <span className="w-1 h-1 rounded-full bg-[#00f5d4] animate-pulse" />
+              <span className="text-[8px] font-mono text-white/30 tracking-wider">ON-CHAIN</span>
+            </div>
           </div>
         </div>
 

@@ -194,6 +194,7 @@ export default function Home() {
         candles={candles}
         tokenName={selectedCoin.name}
         tokenSymbol={selectedCoin.symbol}
+        tokenImageUrl={selectedCoin.imageUrl}
         onBack={handleBack}
       />
     );
@@ -378,9 +379,9 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="max-w-lg mx-auto"
               >
-                <div className="px-6 py-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] border-dashed text-center">
+                <div className="px-6 py-5 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-center">
                   <div className="font-mono text-[10px] text-white/20 tracking-widest uppercase mb-2">Contract Address</div>
-                  <div className="font-mono text-xs text-white/10 select-all">coming soon</div>
+                  <div className="font-mono text-xs text-white/30 select-all break-all">3x5WtJFHFsr4aiE2JzcLhEfKqhFaEKfipjk7BcgJpump</div>
                 </div>
               </motion.div>
             </section>
